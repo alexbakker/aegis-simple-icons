@@ -1,0 +1,6 @@
+[submodule "aegis-tools"]
+	path = aegis-tools
+	url = https://github.com/alexbakker/aegis-tools
+[submodule "simple-icons"]
+	path = simple-icons
+	url = https://github.com/simple-icons/simple-icons
