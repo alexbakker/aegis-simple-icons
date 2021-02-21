@@ -41,10 +41,8 @@ jobs:
               return 'continue'
             }
           result-encoding: string
-      - name: Wait for cancellation
-        run: sleep 60
-        if: steps.check.outputs.result == 'stop'
       - name: Install aegis-tools
+        if: steps.check.outputs.result == 'continue'
         run: cd aegis-tools && python3 -m pip install setuptools setuptools_rust wheel && python3 -m pip install .
       - name: Update simple-icons and increment version
         id: version
