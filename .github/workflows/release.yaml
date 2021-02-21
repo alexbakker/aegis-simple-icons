@@ -1,0 +1,96 @@
+name: release
+on:
+  schedule:
+    - cron: '0 21 * * *'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
+      - name: Check version
+        run: |
+          . scripts/lib.sh
+
+          export DIR="simple-icons"
+          latest="$(git -C ${DIR} tag | sed 's/^v//' | sort -V -r | head -n 1)"
+          current="$(git -C ${DIR} describe --tags --abbrev=0)"
+
+          # source for these two functions: https://stackoverflow.com/a/4024263
+          verlte() {
+              [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+          }
+          verlt() {
+              [ "$1" = "$2" ] && return 1 || verlte $1 $2
+          }
+
+          if verlt $current $latest; then
+            echo "${latest}" > icons_version
+          fi
+      - uses: actions/github-script@v2
+        name: Determine whether to continue
+        id: check
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo
+            if (!fs.existsSync("icons_version")) {
+              console.log('Cancelling ...');
+              const run_id = "${{ github.run_id }}";
+              await github.actions.cancelWorkflowRun({ owner, repo, run_id });
+              return 'stop'
+            } else {
+              return 'continue'
+            }
+          result-encoding: string
+      - name: Wait for cancellation
+        run: sleep 60
+        if: steps.check.outputs.result == 'stop'
+      - name: Install aegis-tools
+        run: cd aegis-tools && python3 -m pip install setuptools setuptools_rust wheel && python3 -m pip install .
+      - name: Update simple-icons and increment version
+        id: version
+        run: |
+          git -C simple-icons checkout "$(cat icons_version)"
+          version=$(($(cat version) + 1))
+          echo $version > version
+          echo "::set-output name=number::${version}"
+      - name: Generate icon pack
+        id: iconpack
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          version="${{ steps.version.outputs.number }}"
+          filename="aegis-simple-icons-v${version}.zip"
+          aegis-tools gen-icon-pack --output "${filename}" --simple-icons simple-icons --version "${version}"
+          echo "::set-output name=filename::${filename}"
+      - name: Commit, tag and push
+        run: |
+          version=$(cat version)
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          git commit -am "Release v${version}"
+          git tag "v${version}" -a -m "This release includes icons of simple-icons $(cat icons_version)."
+          git push --follow-tags
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ steps.version.outputs.number }}"
+          release_name: "v${{ steps.version.outputs.number }}"
+          draft: false
+          prerelease: false
+      - name: Upload icon pack
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ steps.iconpack.outputs.filename }}
+          asset_name: ${{ steps.iconpack.outputs.filename }}
+          asset_content_type: application/zip
