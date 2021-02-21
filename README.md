@@ -1,4 +1,4 @@
-# aegis-simple-icons
+# aegis-simple-icons [![release](https://github.com/alexbakker/aegis-simple-icons/actions/workflows/release.yaml/badge.svg)](https://github.com/alexbakker/aegis-simple-icons/actions/workflows/release.yaml)
 
 __aegis-simple-icons__ is an icon pack for Aegis Authenticator based on [Simple
 Icons](https://github.com/simple-icons/simple-icons). A GitHub Actions workflow
