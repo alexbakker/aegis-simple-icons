@@ -13,8 +13,6 @@ jobs:
         run: git submodule update --init --recursive
       - name: Check version
         run: |
-          . scripts/lib.sh
-
           export DIR="simple-icons"
           latest="$(git -C ${DIR} tag | sed 's/^v//' | sort -V -r | head -n 1)"
           current="$(git -C ${DIR} describe --tags --abbrev=0)"
@@ -38,9 +36,6 @@ jobs:
             const fs = require('fs');
             const { owner, repo } = context.repo
             if (!fs.existsSync("icons_version")) {
-              console.log('Cancelling ...');
-              const run_id = "${{ github.run_id }}";
-              await github.actions.cancelWorkflowRun({ owner, repo, run_id });
               return 'stop'
             } else {
               return 'continue'
@@ -53,6 +48,7 @@ jobs:
         run: cd aegis-tools && python3 -m pip install setuptools setuptools_rust wheel && python3 -m pip install .
       - name: Update simple-icons and increment version
         id: version
+        if: steps.check.outputs.result == 'continue'
         run: |
           git -C simple-icons checkout "$(cat icons_version)"
           version=$(($(cat version) + 1))
@@ -60,6 +56,7 @@ jobs:
           echo "::set-output name=number::${version}"
       - name: Generate icon pack
         id: iconpack
+        if: steps.check.outputs.result == 'continue'
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           version="${{ steps.version.outputs.number }}"
@@ -67,6 +64,7 @@ jobs:
           aegis-tools gen-icon-pack --output "${filename}" --simple-icons simple-icons --version "${version}"
           echo "::set-output name=filename::${filename}"
       - name: Commit, tag and push
+        if: steps.check.outputs.result == 'continue'
         run: |
           version="${{ steps.version.outputs.number }}"
           git config --global user.name 'github-actions[bot]'
@@ -77,6 +75,7 @@ jobs:
           git push --follow-tags
       - name: Create release
         id: create_release
+        if: steps.check.outputs.result == 'continue'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,7 +85,8 @@ jobs:
           draft: false
           prerelease: false
       - name: Upload icon pack
-        id: upload-release-asset 
+        id: upload-release-asset
+        if: steps.check.outputs.result == 'continue'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
