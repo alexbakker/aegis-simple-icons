@@ -7,5 +7,7 @@ new release is found, an Aegis-compatible icon pack is generated using
 [aegis-tools](https://github.com/alexbakker/aegis-tools) and released
 [here](https://github.com/alexbakker/aegis-simple-icons/releases).
 
+![](preview.png)
+
 All credit for the icons belongs to the authors of [Simple
 Icons](https://github.com/simple-icons/simple-icons).
