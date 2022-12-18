@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Checkout submodules
         run: git submodule update --init --recursive
       - name: Check version
@@ -28,7 +28,7 @@ jobs:
           if verlt $current $latest; then
             echo "${latest}" > icons_version
           fi
-      - uses: actions/github-script@v2
+      - uses: actions/github-script@v6
         name: Determine whether to continue
         id: check
         with:
@@ -51,7 +51,7 @@ jobs:
           git -C simple-icons checkout "$(cat icons_version)"
           version=$(($(cat version) + 1))
           echo $version > version
-          echo "::set-output name=number::${version}"
+          echo "number=${version}" >> $GITHUB_OUTPUT
       - name: Generate icon pack
         id: iconpack
         if: steps.check.outputs.result == 'continue'
@@ -60,7 +60,7 @@ jobs:
           version="${{ steps.version.outputs.number }}"
           filename="aegis-simple-icons-v${version}.zip"
           aegis-tools gen-icon-pack --output "${filename}" --simple-icons simple-icons --version "${version}"
-          echo "::set-output name=filename::${filename}"
+          echo "filename=${filename}" >> $GITHUB_OUTPUT
       - name: Commit, tag and push
         if: steps.check.outputs.result == 'continue'
         run: |
