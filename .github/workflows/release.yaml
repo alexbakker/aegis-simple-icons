@@ -1,6 +1,12 @@
 name: release
 on:
   workflow_dispatch:
+    inputs:
+      forceRelease:
+        description: 'Force a new release regardless of wheter a new version of simple-icons is available'
+        default: false
+        required: false
+        type: boolean
   schedule:
     - cron: '0 21 * * *'
 jobs:
@@ -26,6 +32,9 @@ jobs:
           }
 
           if verlt $current $latest; then
+            echo "${latest}" > icons_version
+          fi
+          if "${{ inputs.forceRelease }}" == "true"; then
             echo "${latest}" > icons_version
           fi
       - uses: actions/github-script@v6
