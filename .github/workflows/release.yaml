@@ -81,24 +81,33 @@ jobs:
           git tag "v${version}" -a -m "This release includes icons of simple-icons $(cat icons_version)."
           git push --follow-tags
       - name: Create release
-        id: create_release
+        id: release
         if: steps.check.outputs.result == 'continue'
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v6
         with:
-          tag_name: "v${{ steps.version.outputs.number }}"
-          release_name: "v${{ steps.version.outputs.number }}"
-          draft: false
-          prerelease: false
+          script: |
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: "v${{ steps.version.outputs.number }}",
+              name: "v${{ steps.version.outputs.number }}",
+              draft: false,
+              prerelease: false
+            });
+            console.log(`Created release: ${release.data.html_url}`);
+            return release.data.id;
+          result-encoding: string
       - name: Upload icon pack
-        id: upload-release-asset
         if: steps.check.outputs.result == 'continue'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v6
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ steps.iconpack.outputs.filename }}
-          asset_name: ${{ steps.iconpack.outputs.filename }}
-          asset_content_type: application/zip
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: "${{ steps.release.outputs.result }}",
+              name: "${{ steps.iconpack.outputs.filename }}",
+              data: await fs.readFileSync("./${{ steps.iconpack.outputs.filename }}")
+            });
