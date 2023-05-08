@@ -19,6 +19,7 @@ jobs:
         run: git submodule update --init --recursive
       - name: Check version
         run: |
+          set -ex
           export DIR="simple-icons"
           latest="$(git -C ${DIR} tag | sed 's/^v//' | sort -V -r | head -n 1)"
           current="$(git -C ${DIR} describe --tags --abbrev=0)"
@@ -57,6 +58,7 @@ jobs:
         id: version
         if: steps.check.outputs.result == 'continue'
         run: |
+          set -ex
           git -C simple-icons checkout "$(cat icons_version)"
           version=$(($(cat version) + 1))
           echo $version > version
@@ -65,6 +67,7 @@ jobs:
         id: iconpack
         if: steps.check.outputs.result == 'continue'
         run: |
+          set -ex
           export PATH="$HOME/.local/bin:$PATH"
           version="${{ steps.version.outputs.number }}"
           filename="aegis-simple-icons-v${version}.zip"
@@ -73,6 +76,7 @@ jobs:
       - name: Commit, tag and push
         if: steps.check.outputs.result == 'continue'
         run: |
+          set -ex
           version="${{ steps.version.outputs.number }}"
           git config --global user.name 'github-actions[bot]'
           git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
