@@ -59,7 +59,8 @@ jobs:
         if: steps.check.outputs.result == 'continue'
         run: |
           set -ex
-          git -C simple-icons checkout "$(cat icons_version)"
+          real_icons_version=$(git -C simple-icons tag | egrep "^v?$(cat icons_version | sed 's/\./\\./g')$" | head -n 1)
+          git -C simple-icons checkout "$real_icons_version"
           version=$(($(cat version) + 1))
           echo $version > version
           echo "number=${version}" >> $GITHUB_OUTPUT
