@@ -54,7 +54,7 @@ jobs:
       - name: Install aegis-tools
         if: steps.check.outputs.result == 'continue'
         run: |
-          sudo apt-get install -y libcairo-dev
+          sudo apt-get update && sudo apt-get install -y libcairo-dev
           cd aegis-tools && python3 -m pip install setuptools setuptools_rust wheel && python3 -m pip install .
       - name: Update simple-icons and increment version
         id: version
